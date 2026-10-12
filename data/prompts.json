@@ -1,0 +1,42 @@
+[
+  {
+    "id": "summarize-001",
+    "category": "summary",
+    "prompt": "Summarize the benefits of exercise in 2 sentences.",
+    "expected_behavior": "Concise, accurate, and clear summary of the benefits of exercise.",
+    "metadata": {
+      "difficulty": "easy",
+      "tags": ["health", "summary"]
+    }
+  },
+  {
+    "id": "reason-001",
+    "category": "reasoning",
+    "prompt": "A store has 12 apples. 5 are sold, then 3 more are added. How many apples are there now?",
+    "expected_behavior": "Correct arithmetic showing the total is 10 apples.",
+    "metadata": {
+      "difficulty": "easy",
+      "tags": ["math", "reasoning"]
+    }
+  },
+  {
+    "id": "rewrite-001",
+    "category": "writing",
+    "prompt": "Rewrite this sentence to be more professional: 'We need to fix this fast because the report is bad.'",
+    "expected_behavior": "Professional, concise, and polished language.",
+    "metadata": {
+      "difficulty": "medium",
+      "tags": ["writing", "editing"]
+    }
+  },
+  {
+    "id": "code-001",
+    "category": "coding",
+    "prompt": "Write a Python function that returns the factorial of a non-negative integer using recursion.",
+    "expected_behavior": "Correct recursive Python function with base case and validation.",
+    "metadata": {
+      "difficulty": "medium",
+      "tags": ["python", "coding"]
+    }
+  }
+]

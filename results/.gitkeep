@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from app.models import ProviderConfig
+from app.prompts import generate_default_prompts, load_prompt_cases
+from app.runner import BenchmarkRunner
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Benchmark AI models using reusable prompt-driven evaluation.")
+    parser.add_argument(
+        "--provider",
+        action="append",
+        default=[],
+        help="Provider to benchmark. Repeat this flag to benchmark multiple providers (e.g. --provider openai --provider anthropic).",
+    )
+    parser.add_argument(
+        "--model",
+        action="append",
+        default=[],
+        help="Model name for the corresponding provider. Repeat this flag to align with each provider.",
+    )
+    parser.add_argument("--prompt-file", help="Path to a custom JSON prompt file.")
+    parser.add_argument("--output", default="./results/benchmark.json", help="Where to save the benchmark results.")
+    parser.add_argument("--format", choices=["json", "csv"], default="json", help="Output format for saved results.")
+    parser.add_argument("--list-prompts", action="store_true", help="List built-in prompts and exit.")
+    parser.add_argument("--leaderboard", action="store_true", help="Print a leaderboard summary after the run.")
+    return parser
+
+
+def normalize_provider_configs(provider_names: list[str], model_names: list[str]) -> list[ProviderConfig]:
+    if not provider_names:
+        provider_names = ["openai"]
+    if not model_names:
+        model_names = ["gpt-4o-mini"]
+
+    if len(provider_names) == 1 and len(model_names) > 1:
+        provider_names = provider_names * len(model_names)
+    elif len(model_names) == 1 and len(provider_names) > 1:
+        model_names = model_names * len(provider_names)
+
+    if len(provider_names) != len(model_names):
+        raise ValueError("The number of --provider values must match the number of --model values.")
+
+    return [ProviderConfig(provider=provider, model=model) for provider, model in zip(provider_names, model_names)]
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.list_prompts:
+        prompts = generate_default_prompts()
+        for prompt in prompts:
+            print(f"{prompt.id}: {prompt.category} -> {prompt.prompt}")
+        return 0
+
+    try:
+        configs = normalize_provider_configs(args.provider, args.model)
+        runner = BenchmarkRunner(configs, args.prompt_file)
+        results = runner.run()
+
+        if args.format == "json":
+            runner.write_json(results, args.output)
+        else:
+            csv_path = str(Path(args.output).with_suffix(".csv"))
+            runner.write_csv(results, csv_path)
+
+        print(f"Benchmark complete. Results saved to: {args.output}")
+
+        if args.leaderboard or args.format == "json":
+            leaderboard = runner.leaderboard(results)
+            print("\nLeaderboard:")
+            for rank, row in enumerate(leaderboard[:10], start=1):
+                print(f"{rank}. {row['provider']}/{row['model']} | score={row['score']:.3f} | prompt={row['prompt_id']}")
+
+        return 0
+    except Exception as exc:  # pragma: no cover - CLI error handling
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
